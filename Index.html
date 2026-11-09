@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>วันนี้กินอะไรดี</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5FA;--surface:#fff;--ink:#1B1F3B;--muted:#6B7094;--line:#DDE1EE;
+  --accent:#FFC93C;--accent-ink:#1B1F3B;--hot:#E8505B;--on:#1B1F3B;--on-ink:#fff;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#12142A;--surface:#1D2040;--ink:#F1F2FA;--muted:#9A9FC8;--line:#32365E;--on:#FFC93C;--on-ink:#1B1F3B}
+}
+:root[data-theme="dark"]{--bg:#12142A;--surface:#1D2040;--ink:#F1F2FA;--muted:#9A9FC8;--line:#32365E;--on:#FFC93C;--on-ink:#1B1F3B}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Prompt','Noto Sans Thai',system-ui,sans-serif;line-height:1.5}
+.wrap{max-width:520px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:22px;margin:4px 0 12px;font-weight:700}
+.tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px}
+.tabs button{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-weight:500;padding:9px;border-radius:9px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--on);color:var(--on-ink)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+.result{background:var(--accent);color:var(--accent-ink);border-radius:20px;padding:24px 20px;text-align:center;min-height:190px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px}
+.result .emoji{font-size:46px;line-height:1}
+.result .name{font-size:26px;font-weight:700;line-height:1.25;word-break:break-word}
+.result .meta{font-size:15px;font-weight:500;opacity:.85}
+.result.rolling .name{opacity:.55}
+.result .hint{font-size:15px;opacity:.8}
+.row{display:flex;gap:10px;margin:12px 0 4px}
+.btn{flex:1;border:0;border-radius:14px;padding:15px;font:inherit;font-weight:700;font-size:17px;cursor:pointer;background:var(--on);color:var(--on-ink)}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);font-weight:500;font-size:15px}
+.btn:disabled{opacity:.4;cursor:default}
+.pool{font-size:13px;color:var(--muted);text-align:center;margin:6px 0 18px}
+h2{font-size:15px;margin:18px 0 8px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:14px;padding:7px 13px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--on);color:var(--on-ink);border-color:var(--on)}
+.note{font-size:13px;color:var(--muted);margin:6px 0 0}
+.item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.item.off{opacity:.5}
+.item .em{font-size:26px}
+.item .txt{flex:1;min-width:0}
+.item .t{font-weight:500;word-break:break-word}
+.item.off .t{text-decoration:line-through}
+.item .s{font-size:13px;color:var(--muted)}
+.sm{border:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:13px;padding:6px 10px;border-radius:9px;cursor:pointer}
+.sm.del{color:var(--hot)}
+form{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:10px}
+input,select{font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:no-preference){.result:not(.rolling) .name{animation:pop .3s}}
+@keyframes pop{from{transform:scale(.92)}to{transform:scale(1)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>วันนี้กินอะไรดี</h1>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="t1" aria-selected="true">สุ่มร้าน</button>
+    <button role="tab" id="t2" aria-selected="false">รายชื่อร้าน</button>
+  </div>
+
+  <section id="v1">
+    <div class="result" id="result" aria-live="polite">
+      <div class="emoji">🎲</div>
+      <div class="hint">เลือกเงื่อนไข แล้วกดสุ่มได้เลย</div>
+    </div>
+    <div class="row">
+      <button class="btn" id="spin">สุ่มเลย</button>
+      <button class="btn ghost" id="skip" hidden>ไม่ไปร้านนี้</button>
+    </div>
+    <div class="pool" id="pool"></div>
+
+    <h2>ช่วงราคาต่อคน</h2>
+    <div class="chips" id="priceChips"></div>
+    <h2>ประเภทอาหาร</h2>
+    <div class="chips" id="cuisineChips"></div>
+    <p class="note">ไม่เลือกอะไร = สุ่มจากทุกอย่าง ร้านที่กด “ไม่ไป” จะไม่ถูกสุ่ม</p>
+    <div class="row"><button class="btn ghost" id="clear">ล้างเงื่อนไข</button></div>
+  </section>
+
+  <section id="v2" hidden>
+    <h2 style="margin-top:0">เพิ่มร้านของคุณ</h2>
+    <form id="addForm">
+      <input id="fName" placeholder="ชื่อร้าน" maxlength="60" required>
+      <div class="two">
+        <select id="fCuisine" aria-label="ประเภทอาหาร"></select>
+        <input id="fPrice" type="number" inputmode="numeric" min="0" max="9999" placeholder="ราคา/คน (฿)" required>
+      </div>
+      <button class="btn" type="submit">เพิ่มร้าน</button>
+    </form>
+    <h2>ร้านทั้งหมด <span id="count" style="color:var(--muted);font-weight:400"></span></h2>
+    <div class="row" style="margin-top:0"><button class="btn ghost" id="resetOff">คืนร้านที่ไม่ไปทั้งหมด</button><button class="btn ghost" id="resetAll">คืนค่าเริ่มต้น</button></div>
+    <div id="list" style="margin-top:12px"></div>
+  </section>
+</div>
+
+<script>
+const CUISINES={
+  'ตามสั่ง':'🍳','ก๋วยเตี๋ยว':'🍜','อีสาน':'🌶️','ญี่ปุ่น':'🍣','เกาหลี':'🥘','ชาบู/ปิ้งย่าง':'🍲',
+  'ฟาสต์ฟู้ด':'🍔','อิตาเลียน/ตะวันตก':'🍝','อาหารทะเล':'🦐','คาเฟ่/เบเกอรี่':'🥐'
+};
+const TIERS=[{l:'ไม่เกิน ฿80',a:0,b:80},{l:'฿81–150',a:81,b:150},{l:'฿151–300',a:151,b:300},{l:'฿300 ขึ้นไป',a:301,b:1e9}];
+const DEFAULTS=[
+ ['ข้าวกะเพราหมูกรอบ','ตามสั่ง',70],['ข้าวหมูทอดกระเทียม','ตามสั่ง',65],['ข้าวผัดกุ้ง','ตามสั่ง',80],['ข้าวมันไก่','ตามสั่ง',60],
+ ['ก๋วยเตี๋ยวเรือ','ก๋วยเตี๋ยว',60],['บะหมี่เกี๊ยวหมูแดง','ก๋วยเตี๋ยว',70],['ผัดไทยกุ้งสด','ก๋วยเตี๋ยว',90],['เย็นตาโฟ','ก๋วยเตี๋ยว',65],
+ ['ส้มตำ ไก่ย่าง คอหมูย่าง','อีสาน',120],['ลาบ น้ำตก ข้าวเหนียว','อีสาน',110],['ตำปูปลาร้า ซุปหน่อไม้','อีสาน',100],
+ ['ข้าวหน้าไก่เทอริยากิ','ญี่ปุ่น',130],['ราเมนทงคตสึ','ญี่ปุ่น',190],['ซูชิสายพาน','ญี่ปุ่น',280],['ข้าวแกงกะหรี่ญี่ปุ่น','ญี่ปุ่น',150],
+ ['บิบิมบับ','เกาหลี',170],['ต๊อกบกกี + ไก่ทอดเกาหลี','เกาหลี',200],['ซุปกิมจิหม้อดิน','เกาหลี',160],
+ ['ชาบูหม้อร้อนบุฟเฟต์','ชาบู/ปิ้งย่าง',350],['หมูกระทะบุฟเฟต์','ชาบู/ปิ้งย่าง',229],['ปิ้งย่างสไตล์ญี่ปุ่น','ชาบู/ปิ้งย่าง',480],['สุกี้หม้อไฟ','ชาบู/ปิ้งย่าง',180],
+ ['เบอร์เกอร์ + เฟรนช์ฟรายส์','ฟาสต์ฟู้ด',150],['ไก่ทอดชุดอิ่ม','ฟาสต์ฟู้ด',120],['ซับมารีนแซนด์วิช','ฟาสต์ฟู้ด',130],
+ ['พาสต้าครีมซอส','อิตาเลียน/ตะวันตก',220],['พิซซ่าหน้าซีฟู้ด','อิตาเลียน/ตะวันตก',250],['สเต๊กเนื้อ','อิตาเลียน/ตะวันตก',390],
+ ['กุ้งเผา หอยแครงลวก','อาหารทะเล',350],['ปูผัดผงกะหรี่','อาหารทะเล',450],['ปลากะพงทอดน้ำปลา','อาหารทะเล',320],
+ ['แซนด์วิช + กาแฟ','คาเฟ่/เบเกอรี่',180],['ครัวซองต์ + ชา','คาเฟ่/เบเกอรี่',140],['ข้าวคาเฟ่ + เค้ก','คาเฟ่/เบเกอรี่',260]
+].map((r,i)=>({id:'d'+i,name:r[0],cuisine:r[1],price:r[2],off:false}));
+
+const KEY='rr-v1';
+let S={list:DEFAULTS.map(x=>({...x})),cu:[],pr:[]};
+let last=null,cur=null,timer=null;
+try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(p&&Array.isArray(p.list))S=p}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const $=id=>document.getElementById(id);
+
+function tierOf(p){return TIERS.findIndex(t=>p>=t.a&&p<=t.b)}
+function pool(){
+  return S.list.filter(r=>!r.off&&(!S.cu.length||S.cu.includes(r.cuisine))&&(!S.pr.length||S.pr.includes(tierOf(r.price))));
+}
+function chip(label,on,fn){
+  const b=document.createElement('button');b.className='chip';b.type='button';b.textContent=label;
+  b.setAttribute('aria-pressed',on);b.onclick=fn;return b;
+}
+function toggle(arr,v){const i=arr.indexOf(v);i<0?arr.push(v):arr.splice(i,1);save();renderFilters()}
+function renderFilters(){
+  const pc=$('priceChips'),cc=$('cuisineChips');pc.textContent='';cc.textContent='';
+  TIERS.forEach((t,i)=>pc.append(chip(t.l,S.pr.includes(i),()=>toggle(S.pr,i))));
+  Object.keys(CUISINES).forEach(c=>cc.append(chip(CUISINES[c]+' '+c,S.cu.includes(c),()=>toggle(S.cu,c))));
+  const n=pool().length;
+  $('pool').textContent=n?'สุ่มได้จาก '+n+' ร้าน':'ไม่มีร้านตรงเงื่อนไข ลองผ่อนเงื่อนไขหรือเพิ่มร้านใหม่';
+  $('spin').disabled=!n;
+}
+function show(r,rolling){
+  const el=$('result');el.className='result'+(rolling?' rolling':'');el.textContent='';
+  const mk=(c,t)=>{const d=document.createElement('div');d.className=c;d.textContent=t;el.append(d)};
+  mk('emoji',CUISINES[r.cuisine]||'🍽️');mk('name',r.name);mk('meta',r.cuisine+' • ประมาณ ฿'+r.price+' / คน');
+}
+function spin(){
+  const p=pool();if(!p.length||timer)return;
+  let pick=p[Math.floor(Math.random()*p.length)];
+  if(p.length>1)while(last&&pick.id===last)pick=p[Math.floor(Math.random()*p.length)];
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  $('skip').hidden=true;
+  if(reduce||p.length===1){finish(pick);return}
+  let n=0;$('spin').disabled=true;
+  timer=setInterval(()=>{
+    show(p[Math.floor(Math.random()*p.length)],true);
+    if(++n>=14){clearInterval(timer);timer=null;finish(pick)}
+  },80);
+}
+function finish(r){cur=r;last=r.id;show(r,false);$('skip').hidden=false;$('spin').textContent='สุ่มใหม่';$('spin').disabled=!pool().length}
+$('spin').onclick=spin;
+$('skip').onclick=()=>{
+  if(!cur)return;const r=S.list.find(x=>x.id===cur.id);if(r)r.off=true;save();
+  renderFilters();renderList();cur=null;spin();
+};
+$('clear').onclick=()=>{S.cu=[];S.pr=[];save();renderFilters()};
+
+function renderList(){
+  const box=$('list');box.textContent='';
+  $('count').textContent='('+S.list.length+')';
+  S.list.forEach(r=>{
+    const d=document.createElement('div');d.className='item'+(r.off?' off':'');
+    const em=document.createElement('div');em.className='em';em.textContent=CUISINES[r.cuisine]||'🍽️';
+    const tx=document.createElement('div');tx.className='txt';
+    const t=document.createElement('div');t.className='t';t.textContent=r.name;
+    const s=document.createElement('div');s.className='s';s.textContent=r.cuisine+' • ฿'+r.price;
+    tx.append(t,s);
+    const b1=document.createElement('button');b1.className='sm';b1.textContent=r.off?'กลับมาไป':'ไม่ไป';
+    b1.onclick=()=>{r.off=!r.off;save();renderList();renderFilters()};
+    const b2=document.createElement('button');b2.className='sm del';b2.textContent='ลบ';b2.setAttribute('aria-label','ลบ '+r.name);
+    b2.onclick=()=>{S.list=S.list.filter(x=>x.id!==r.id);save();renderList();renderFilters()};
+    d.append(em,tx,b1,b2);box.append(d);
+  });
+}
+$('resetOff').onclick=()=>{S.list.forEach(r=>r.off=false);save();renderList();renderFilters()};
+$('resetAll').onclick=()=>{if(confirm('คืนรายชื่อร้านเป็นค่าเริ่มต้น? ร้านที่เพิ่มเองจะหายไป')){S={list:DEFAULTS.map(x=>({...x})),cu:[],pr:[]};save();renderList();renderFilters()}};
+
+const sel=$('fCuisine');
+Object.keys(CUISINES).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.append(o)});
+$('addForm').onsubmit=e=>{
+  e.preventDefault();
+  const name=$('fName').value.trim(),price=parseInt($('fPrice').value,10);
+  if(!name||isNaN(price))return;
+  S.list.unshift({id:'u'+Date.now(),name,cuisine:sel.value,price,off:false});
+  save();$('addForm').reset();renderList();renderFilters();
+};
+
+function tab(n){
+  $('v1').hidden=n!==1;$('v2').hidden=n!==2;
+  $('t1').setAttribute('aria-selected',n===1);$('t2').setAttribute('aria-selected',n===2);
+}
+$('t1').onclick=()=>tab(1);$('t2').onclick=()=>tab(2);
+renderFilters();renderList();
+</script>
+</body>
+</html>
