@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>วันนี้กินอะไรดี???</title>
+<title>กินอะไรดี – เดอะมอลล์ งามวงศ์วาน</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -60,7 +60,7 @@ input,select{font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;bo
 </head>
 <body>
 <div class="wrap">
-  <h1>วันนี้กินอะไรดี</h1>
+  <h1>กินอะไรดี<br><small style="font-size:14px;font-weight:400;color:var(--muted)">เดอะมอลล์ ไลฟ์สโตร์ งามวงศ์วาน</small></h1>
   <div class="tabs" role="tablist">
     <button role="tab" id="t1" aria-selected="true">สุ่มร้าน</button>
     <button role="tab" id="t2" aria-selected="false">รายชื่อร้าน</button>
@@ -81,6 +81,8 @@ input,select{font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;bo
     <div class="chips" id="priceChips"></div>
     <h2>ประเภทอาหาร</h2>
     <div class="chips" id="cuisineChips"></div>
+    <h2>ชั้น</h2>
+    <div class="chips" id="floorChips"></div>
     <p class="note">ไม่เลือกอะไร = สุ่มจากทุกอย่าง ร้านที่กด “ไม่ไป” จะไม่ถูกสุ่ม</p>
     <div class="row"><button class="btn ghost" id="clear">ล้างเงื่อนไข</button></div>
   </section>
@@ -93,8 +95,10 @@ input,select{font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;bo
         <select id="fCuisine" aria-label="ประเภทอาหาร"></select>
         <input id="fPrice" type="number" inputmode="numeric" min="0" max="9999" placeholder="ราคา/คน (฿)" required>
       </div>
+      <input id="fFloor" placeholder="ชั้น เช่น 5 หรือ G (ไม่ใส่ก็ได้)" maxlength="20">
       <button class="btn" type="submit">เพิ่มร้าน</button>
     </form>
+    <p class="note">ชื่อร้านรวบรวมจากเว็บไซต์รีวิวและข่าวห้าง (ปี 2024–2026) ราคาเป็นประมาณการต่อคน ร้านอาจปิดหรือย้ายชั้น ควรเช็กก่อนไป</p>
     <h2>ร้านทั้งหมด <span id="count" style="color:var(--muted);font-weight:400"></span></h2>
     <div class="row" style="margin-top:0"><button class="btn ghost" id="resetOff">คืนร้านที่ไม่ไปทั้งหมด</button><button class="btn ghost" id="resetAll">คืนค่าเริ่มต้น</button></div>
     <div id="list" style="margin-top:12px"></div>
@@ -103,33 +107,33 @@ input,select{font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;bo
 
 <script>
 const CUISINES={
-  'ตามสั่ง':'🍳','ก๋วยเตี๋ยว':'🍜','อีสาน':'🌶️','ญี่ปุ่น':'🍣','เกาหลี':'🥘','ชาบู/ปิ้งย่าง':'🍲',
-  'ฟาสต์ฟู้ด':'🍔','อิตาเลียน/ตะวันตก':'🍝','อาหารทะเล':'🦐','คาเฟ่/เบเกอรี่':'🥐'
+  'ไทย':'🍛','อาหารทะเล':'🦐','จีน':'🥢','ญี่ปุ่น':'🍣','เกาหลี':'🥘','บุฟเฟต์/ปิ้งย่าง':'🍲',
+  'เนื้อ':'🥩','ตะวันตก':'🍔','สลัด/สุขภาพ':'🥗','ขนม/คาเฟ่':'🍨'
 };
-const TIERS=[{l:'ไม่เกิน ฿80',a:0,b:80},{l:'฿81–150',a:81,b:150},{l:'฿151–300',a:151,b:300},{l:'฿300 ขึ้นไป',a:301,b:1e9}];
+const TIERS=[{l:'ไม่เกิน ฿150',a:0,b:150},{l:'฿151–300',a:151,b:300},{l:'฿301–500',a:301,b:500},{l:'฿500 ขึ้นไป',a:501,b:1e9}];
 const DEFAULTS=[
- ['ข้าวกะเพราหมูกรอบ','ตามสั่ง',70],['ข้าวหมูทอดกระเทียม','ตามสั่ง',65],['ข้าวผัดกุ้ง','ตามสั่ง',80],['ข้าวมันไก่','ตามสั่ง',60],
- ['ก๋วยเตี๋ยวเรือ','ก๋วยเตี๋ยว',60],['บะหมี่เกี๊ยวหมูแดง','ก๋วยเตี๋ยว',70],['ผัดไทยกุ้งสด','ก๋วยเตี๋ยว',90],['เย็นตาโฟ','ก๋วยเตี๋ยว',65],
- ['ส้มตำ ไก่ย่าง คอหมูย่าง','อีสาน',120],['ลาบ น้ำตก ข้าวเหนียว','อีสาน',110],['ตำปูปลาร้า ซุปหน่อไม้','อีสาน',100],
- ['ข้าวหน้าไก่เทอริยากิ','ญี่ปุ่น',130],['ราเมนทงคตสึ','ญี่ปุ่น',190],['ซูชิสายพาน','ญี่ปุ่น',280],['ข้าวแกงกะหรี่ญี่ปุ่น','ญี่ปุ่น',150],
- ['บิบิมบับ','เกาหลี',170],['ต๊อกบกกี + ไก่ทอดเกาหลี','เกาหลี',200],['ซุปกิมจิหม้อดิน','เกาหลี',160],
- ['ชาบูหม้อร้อนบุฟเฟต์','ชาบู/ปิ้งย่าง',350],['หมูกระทะบุฟเฟต์','ชาบู/ปิ้งย่าง',229],['ปิ้งย่างสไตล์ญี่ปุ่น','ชาบู/ปิ้งย่าง',480],['สุกี้หม้อไฟ','ชาบู/ปิ้งย่าง',180],
- ['เบอร์เกอร์ + เฟรนช์ฟรายส์','ฟาสต์ฟู้ด',150],['ไก่ทอดชุดอิ่ม','ฟาสต์ฟู้ด',120],['ซับมารีนแซนด์วิช','ฟาสต์ฟู้ด',130],
- ['พาสต้าครีมซอส','อิตาเลียน/ตะวันตก',220],['พิซซ่าหน้าซีฟู้ด','อิตาเลียน/ตะวันตก',250],['สเต๊กเนื้อ','อิตาเลียน/ตะวันตก',390],
- ['กุ้งเผา หอยแครงลวก','อาหารทะเล',350],['ปูผัดผงกะหรี่','อาหารทะเล',450],['ปลากะพงทอดน้ำปลา','อาหารทะเล',320],
- ['แซนด์วิช + กาแฟ','คาเฟ่/เบเกอรี่',180],['ครัวซองต์ + ชา','คาเฟ่/เบเกอรี่',140],['ข้าวคาเฟ่ + เค้ก','คาเฟ่/เบเกอรี่',260]
-].map((r,i)=>({id:'d'+i,name:r[0],cuisine:r[1],price:r[2],off:false}));
+ ['แหลมเจริญซีฟู้ด','อาหารทะเล',256,'ชั้น 5'],['บ้านหญิง','ไทย',400,'ชั้น 5'],['แก้วแกงใต้','ไทย',190,'ชั้น G'],
+ ['เจ๊แดง จุ่มนัวร์','ไทย',150,'ชั้น 5'],['ส้มตำพี่สาว','ไทย',100,'หลังห้าง'],
+ ['เอี่ยวไถ่ สุกี้โบราณ','จีน',300,'ชั้น 5'],['เชียงการีล่า ไดมอนด์','จีน',400,'ชั้น 5'],
+ ['Kofuku โคฟุกุ','ญี่ปุ่น',200,'ชั้น 5'],['ฟูจิ เรสเตอรองท์','ญี่ปุ่น',250,'ชั้น 5'],['Sushi Seki','ญี่ปุ่น',400,'ชั้น 5'],['Yakiniku Like','ญี่ปุ่น',350,''],
+ ['Seoulchon โซลชอน','เกาหลี',180,'ชั้น 5'],['Nice Two Meat U','เกาหลี',250,'ชั้น 5'],['จากึมซอง','เกาหลี',150,'ชั้น 5'],['Choongman Chicken','เกาหลี',250,'ชั้น 5'],
+ ['Tenjo Sushi & Yakiniku','บุฟเฟต์/ปิ้งย่าง',499,'ชั้น 5'],['มงก๊ก สุกี้ฮ่องกง','บุฟเฟต์/ปิ้งย่าง',549,'ชั้น 5'],['Kin Donburi Cafe','บุฟเฟต์/ปิ้งย่าง',599,'ชั้น 5'],
+ ['Jukkumi จุกกุมิ','บุฟเฟต์/ปิ้งย่าง',399,'ชั้น 5'],['AKA อากะ','บุฟเฟต์/ปิ้งย่าง',359,'ชั้น 5'],['Bar B Q Plaza','บุฟเฟต์/ปิ้งย่าง',300,'ชั้น 4'],['Shabu Shi','บุฟเฟต์/ปิ้งย่าง',399,''],
+ ['เน้นเนื้อ','เนื้อ',225,'ชั้น 5'],['Smoked Joint','เนื้อ',350,'ชั้น G'],
+ ['Lucky’s Hungry ข้าวผัดอเมริกัน','ตะวันตก',150,'ชั้น G'],['Salad Factory','สลัด/สุขภาพ',150,'ชั้น 5'],['SOURI ขนมหวาน','ขนม/คาเฟ่',150,'ชั้น G']
+].map((r,i)=>({id:'d'+i,name:r[0],cuisine:r[1],price:r[2],floor:r[3]||'',off:false}));
 
-const KEY='rr-v1';
-let S={list:DEFAULTS.map(x=>({...x})),cu:[],pr:[]};
+const KEY='rr-mall-ngw-v1';
+let S={list:DEFAULTS.map(x=>({...x})),cu:[],pr:[],fl:[]};
 let last=null,cur=null,timer=null;
 try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(p&&Array.isArray(p.list))S=p}}catch(e){}
+if(!Array.isArray(S.fl))S.fl=[];
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const $=id=>document.getElementById(id);
 
 function tierOf(p){return TIERS.findIndex(t=>p>=t.a&&p<=t.b)}
 function pool(){
-  return S.list.filter(r=>!r.off&&(!S.cu.length||S.cu.includes(r.cuisine))&&(!S.pr.length||S.pr.includes(tierOf(r.price))));
+  return S.list.filter(r=>!r.off&&(!S.cu.length||S.cu.includes(r.cuisine))&&(!S.pr.length||S.pr.includes(tierOf(r.price)))&&(!S.fl.length||S.fl.includes(r.floor||'ไม่ระบุ')));
 }
 function chip(label,on,fn){
   const b=document.createElement('button');b.className='chip';b.type='button';b.textContent=label;
@@ -137,9 +141,11 @@ function chip(label,on,fn){
 }
 function toggle(arr,v){const i=arr.indexOf(v);i<0?arr.push(v):arr.splice(i,1);save();renderFilters()}
 function renderFilters(){
-  const pc=$('priceChips'),cc=$('cuisineChips');pc.textContent='';cc.textContent='';
+  const pc=$('priceChips'),cc=$('cuisineChips'),fc=$('floorChips');pc.textContent='';cc.textContent='';fc.textContent='';
   TIERS.forEach((t,i)=>pc.append(chip(t.l,S.pr.includes(i),()=>toggle(S.pr,i))));
   Object.keys(CUISINES).forEach(c=>cc.append(chip(CUISINES[c]+' '+c,S.cu.includes(c),()=>toggle(S.cu,c))));
+  const fk=f=>{const m=f.match(/ชั้น\s*(\S+)/);return m?(m[1].toUpperCase()==='G'?0:(parseInt(m[1],10)||50)):99};
+  [...new Set(S.list.map(r=>r.floor||'ไม่ระบุ'))].sort((a,b)=>fk(a)-fk(b)).forEach(f=>fc.append(chip(f,S.fl.includes(f),()=>toggle(S.fl,f))));
   const n=pool().length;
   $('pool').textContent=n?'สุ่มได้จาก '+n+' ร้าน':'ไม่มีร้านตรงเงื่อนไข ลองผ่อนเงื่อนไขหรือเพิ่มร้านใหม่';
   $('spin').disabled=!n;
@@ -147,7 +153,7 @@ function renderFilters(){
 function show(r,rolling){
   const el=$('result');el.className='result'+(rolling?' rolling':'');el.textContent='';
   const mk=(c,t)=>{const d=document.createElement('div');d.className=c;d.textContent=t;el.append(d)};
-  mk('emoji',CUISINES[r.cuisine]||'🍽️');mk('name',r.name);mk('meta',r.cuisine+' • ประมาณ ฿'+r.price+' / คน');
+  mk('emoji',CUISINES[r.cuisine]||'🍽️');mk('name',r.name);mk('meta',r.cuisine+' • ประมาณ ฿'+r.price+' / คน'+(r.floor?' • '+r.floor:''));
 }
 function spin(){
   const p=pool();if(!p.length||timer)return;
@@ -168,7 +174,7 @@ $('skip').onclick=()=>{
   if(!cur)return;const r=S.list.find(x=>x.id===cur.id);if(r)r.off=true;save();
   renderFilters();renderList();cur=null;spin();
 };
-$('clear').onclick=()=>{S.cu=[];S.pr=[];save();renderFilters()};
+$('clear').onclick=()=>{S.cu=[];S.pr=[];S.fl=[];save();renderFilters()};
 
 function renderList(){
   const box=$('list');box.textContent='';
@@ -178,7 +184,7 @@ function renderList(){
     const em=document.createElement('div');em.className='em';em.textContent=CUISINES[r.cuisine]||'🍽️';
     const tx=document.createElement('div');tx.className='txt';
     const t=document.createElement('div');t.className='t';t.textContent=r.name;
-    const s=document.createElement('div');s.className='s';s.textContent=r.cuisine+' • ฿'+r.price;
+    const s=document.createElement('div');s.className='s';s.textContent=r.cuisine+' • ฿'+r.price+(r.floor?' • '+r.floor:'');
     tx.append(t,s);
     const b1=document.createElement('button');b1.className='sm';b1.textContent=r.off?'กลับมาไป':'ไม่ไป';
     b1.onclick=()=>{r.off=!r.off;save();renderList();renderFilters()};
@@ -188,7 +194,7 @@ function renderList(){
   });
 }
 $('resetOff').onclick=()=>{S.list.forEach(r=>r.off=false);save();renderList();renderFilters()};
-$('resetAll').onclick=()=>{if(confirm('คืนรายชื่อร้านเป็นค่าเริ่มต้น? ร้านที่เพิ่มเองจะหายไป')){S={list:DEFAULTS.map(x=>({...x})),cu:[],pr:[]};save();renderList();renderFilters()}};
+$('resetAll').onclick=()=>{if(confirm('คืนรายชื่อร้านเป็นค่าเริ่มต้น? ร้านที่เพิ่มเองจะหายไป')){S={list:DEFAULTS.map(x=>({...x})),cu:[],pr:[],fl:[]};save();renderList();renderFilters()}};
 
 const sel=$('fCuisine');
 Object.keys(CUISINES).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.append(o)});
@@ -196,7 +202,8 @@ $('addForm').onsubmit=e=>{
   e.preventDefault();
   const name=$('fName').value.trim(),price=parseInt($('fPrice').value,10);
   if(!name||isNaN(price))return;
-  S.list.unshift({id:'u'+Date.now(),name,cuisine:sel.value,price,off:false});
+  let fl=$('fFloor').value.trim();if(/^(\d+|g)$/i.test(fl))fl='ชั้น '+fl.toUpperCase();
+  S.list.unshift({id:'u'+Date.now(),name,cuisine:sel.value,price,floor:fl,off:false});
   save();$('addForm').reset();renderList();renderFilters();
 };
 
