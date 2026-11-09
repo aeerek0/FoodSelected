@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>กินอะไรดี – เดอะมอลล์ งามวงศ์วาน</title>
+<title>กินอะไรดี ????</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -108,7 +108,8 @@ input,select{font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;bo
 <script>
 const CUISINES={
   'ไทย':'🍛','อาหารทะเล':'🦐','จีน':'🥢','ญี่ปุ่น':'🍣','เกาหลี':'🥘','บุฟเฟต์/ปิ้งย่าง':'🍲',
-  'เนื้อ':'🥩','ตะวันตก':'🍔','สลัด/สุขภาพ':'🥗','ขนม/คาเฟ่':'🍨'
+  'เนื้อ':'🥩','ตะวันตก':'🍔','สลัด/สุขภาพ':'🥗',
+  'ตามสั่ง':'🍳','ฟาสต์ฟู้ด':'🍟','ฟู้ดคอร์ท':'🍽️'
 };
 const TIERS=[{l:'ไม่เกิน ฿150',a:0,b:150},{l:'฿151–300',a:151,b:300},{l:'฿301–500',a:301,b:500},{l:'฿500 ขึ้นไป',a:501,b:1e9}];
 const DEFAULTS=[
@@ -120,14 +121,22 @@ const DEFAULTS=[
  ['Tenjo Sushi & Yakiniku','บุฟเฟต์/ปิ้งย่าง',499,'ชั้น 5'],['มงก๊ก สุกี้ฮ่องกง','บุฟเฟต์/ปิ้งย่าง',549,'ชั้น 5'],['Kin Donburi Cafe','บุฟเฟต์/ปิ้งย่าง',599,'ชั้น 5'],
  ['Jukkumi จุกกุมิ','บุฟเฟต์/ปิ้งย่าง',399,'ชั้น 5'],['AKA อากะ','บุฟเฟต์/ปิ้งย่าง',359,'ชั้น 5'],['Bar B Q Plaza','บุฟเฟต์/ปิ้งย่าง',300,'ชั้น 4'],['Shabu Shi','บุฟเฟต์/ปิ้งย่าง',399,''],
  ['เน้นเนื้อ','เนื้อ',225,'ชั้น 5'],['Smoked Joint','เนื้อ',350,'ชั้น G'],
- ['Lucky’s Hungry ข้าวผัดอเมริกัน','ตะวันตก',150,'ชั้น G'],['Salad Factory','สลัด/สุขภาพ',150,'ชั้น 5'],['SOURI ขนมหวาน','ขนม/คาเฟ่',150,'ชั้น G']
+ ['Lucky’s Hungry ข้าวผัดอเมริกัน','ตะวันตก',150,'ชั้น G'],['Salad Factory','สลัด/สุขภาพ',150,'ชั้น 5'],
+ ['ตามสั่งพี่แหม่มข้างเดอะมอลล์','ตามสั่ง',75,'หลังห้าง'],['ตามสั่งเต๊นท์เขียว','ตามสั่ง',65,'หลังห้าง'],
+ ['ข้าวไข่ข้น','ตามสั่ง',75,'หลังห้าง'],['ตามสั่งฟิวชั่น','ตามสั่ง',75,'หลังห้าง'],
+ ['โลตัส','ฟู้ดคอร์ท',75,'โลตัส'],['Food Court','ฟู้ดคอร์ท',75,'ชั้น 5'],
+ ['KFC','ฟาสต์ฟู้ด',120,'ชั้น G'],['Chester Grill','ฟาสต์ฟู้ด',120,'ชั้น G']
 ].map((r,i)=>({id:'d'+i,name:r[0],cuisine:r[1],price:r[2],floor:r[3]||'',off:false}));
 
 const KEY='rr-mall-ngw-v1';
-let S={list:DEFAULTS.map(x=>({...x})),cu:[],pr:[],fl:[]};
+let S={list:DEFAULTS.map(x=>({...x})),cu:[],pr:[],fl:[],dv:DEFAULTS.length};
 let last=null,cur=null,timer=null;
 try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(p&&Array.isArray(p.list))S=p}}catch(e){}
 if(!Array.isArray(S.fl))S.fl=[];
+if(typeof S.dv!=='number')S.dv=26;
+S.list=S.list.filter(r=>r.cuisine!=='ขนม/คาเฟ่');S.cu=S.cu.filter(c=>c!=='ขนม/คาเฟ่');
+if(S.dv>DEFAULTS.length)S.dv=DEFAULTS.length;
+if(S.dv<DEFAULTS.length){S.list.push(...DEFAULTS.slice(S.dv).map(x=>({...x})));S.dv=DEFAULTS.length;save()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const $=id=>document.getElementById(id);
 
@@ -194,7 +203,7 @@ function renderList(){
   });
 }
 $('resetOff').onclick=()=>{S.list.forEach(r=>r.off=false);save();renderList();renderFilters()};
-$('resetAll').onclick=()=>{if(confirm('คืนรายชื่อร้านเป็นค่าเริ่มต้น? ร้านที่เพิ่มเองจะหายไป')){S={list:DEFAULTS.map(x=>({...x})),cu:[],pr:[],fl:[]};save();renderList();renderFilters()}};
+$('resetAll').onclick=()=>{if(confirm('คืนรายชื่อร้านเป็นค่าเริ่มต้น? ร้านที่เพิ่มเองจะหายไป')){S={list:DEFAULTS.map(x=>({...x})),cu:[],pr:[],fl:[],dv:DEFAULTS.length};save();renderList();renderFilters()}};
 
 const sel=$('fCuisine');
 Object.keys(CUISINES).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.append(o)});
